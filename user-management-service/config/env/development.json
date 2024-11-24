@@ -1,0 +1,19 @@
+{
+    "app": {
+        "apiPort": 5000,
+        "apiUrl": "http://localhost:5000",
+        "appUrl": "http://localhost:3000",
+        "userApiUrl": "http://localhost:5000",
+        "surveyApiUrl": "http://localhost:5001",
+        "notificationApiUrl": "http://localhost:5002"
+    },
+    "db": {
+        "dbUrl": "mongodb+srv://sharmakamal5202:Kamal%405201@development.q1adp.mongodb.net/?retryWrites=true&w=majority&appName=Development"
+    },
+    "google": {
+        "googleClientId": "385257284003-1pjhfl833p054ptmbko79ga3sg3b8mf6.apps.googleusercontent.com",
+        "googleClientSecret": "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",
+        "googleEmail": "sharmakamal5202@gmail.com",
+        "googlePassword": "wwakbncdwzrbyxqx"
+    }
+}
