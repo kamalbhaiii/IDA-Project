@@ -15,5 +15,6 @@
         "googleClientSecret": "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",
         "googleEmail": "sharmakamal5202@gmail.com",
         "googlePassword": "wwakbncdwzrbyxqx"
-    }
+    },
+    "jwtSecret": "thisismysecrettojsonwebtokesecuritybutonlyfordevelopmentserverwhichwasmadeon25november2024"
 }
