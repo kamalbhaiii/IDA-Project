@@ -8,6 +8,7 @@ const connectDB = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const logger = require('./middleware/logger');
+const session = require('express-session')
 require('dotenv').config()
 const config = require(`./config/env/${process.env.NODE_ENV}.json`)
 
@@ -19,6 +20,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(logger);
+app.use(session({ secret: config.google.googleClientSecret }))
 app.use(passport.initialize());
 
 // Swagger documentation setup

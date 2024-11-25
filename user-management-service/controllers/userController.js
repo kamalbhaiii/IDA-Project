@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const transporter = require('../config/email');
+const { createToken, verifyToken } = require('../config/jwt');
 const config = require(`../config/env/${process.env.NODE_ENV}.json`)
 
 const sendEmail = (email, subject, text) => {
@@ -23,23 +24,56 @@ const handleLogin = async (req, res) => {
     try {
         const user = await User.findOne({ googleId: req.user.googleId });
 
-        if (!user.surveyCompleted) {
-            sendEmail(user.email, 'Welcome!', 'Thanks for joining! Please complete the survey.');
-            return res.redirect('/survey');
+        const token = await createToken(req.user)
+
+        if (!user) {
+            await User.create({
+                googleId: req.user.googleId,
+                displayName: req.user.displayName,
+                email: req.user.email,
+                bearerToken: token
+            })
+            sendEmail(req.user.email, 'Welcome!', 'Thanks for joining! Please complete the survey.');
+            return res.redirect(`${config.app.appUrl}/survey?token=${token}`)
         } else {
-            sendEmail(user.email, 'Welcome back!', 'You have successfully logged in.');
-            return res.redirect('/dashboard');
+            if (!user.bearerToken) {
+                await User.findOneAndUpdate({ googleId: req.user.googleId }, { bearerToken: token })
+                if (!user.surveyCompleted) {
+                    sendEmail(req.user.email, 'Welcome back!', 'You have successfully logged in. Please complete the survey.');
+                    return res.redirect(`${config.app.appUrl}/survey?token=${token}`)
+                }
+                else {
+                    sendEmail(req.user.email, 'Welcome back!', 'You have successfully logged in.');
+                    return res.redirect(`${config.app.appUrl}/dashboard?token=${token}`)
+                }
+            }
+            else {
+                return res.status(400).json({ error: 'Session already active.' })
+            }
         }
     } catch (error) {
         res.status(500).json({ error: 'Server error during login.' });
     }
 };
 
-const handleLogout = (req, res) => {
-    const email = req.user.email;
-    req.logout();
-    sendEmail(email, 'Logout Successful', 'You have successfully logged out.');
-    res.redirect('/');
+const handleLogout = async (req, res) => {
+    const token = req.headers?.authorization.split(" ")[1]
+    const { data } = await verifyToken(token)
+
+    if (data) {
+        const user = await User.findById(data._id)
+        if (user.bearerToken == token) {
+            await User.findByIdAndUpdate(user._id, { bearerToken: "" })
+            sendEmail(data.email, 'Thank You!', 'You have successfully logged out.');
+            return res.redirect('/logout');
+        }
+        else {
+            return res.status(401).json({ error: "Unauthorized." })
+        }
+    }
+    else {
+        return res.status(401).json({ error: "Unauthorized." })
+    }
 };
 
 module.exports = { handleLogin, handleLogout };
