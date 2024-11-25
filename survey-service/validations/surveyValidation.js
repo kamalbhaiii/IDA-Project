@@ -22,6 +22,7 @@ const surveyValidationSchema = Joi.object({
     jobSearchMethods: Joi.array()
         .items(
             Joi.string().valid(
+                'Personal visits',
                 'Online job portals',
                 'University career services',
                 'Networking events',

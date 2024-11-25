@@ -46,7 +46,7 @@ const SurveySchema = new mongoose.Schema({
     },
     jobSearchMethods: {
         type: [String],
-        enum: ['Online job portals', 'University career services', 'Networking events', 'Social media platforms', 'Direct applications to companies', 'Other'],
+        enum: ['Personal visits', 'Online job portals', 'University career services', 'Networking events', 'Social media platforms', 'Direct applications to companies', 'Other'],
         required: true
     },
     hasInternshipExperience: {

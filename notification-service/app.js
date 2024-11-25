@@ -3,20 +3,16 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-const connectDB = require('./config/db');
 const notificationRoutes = require('./routes/notificationRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const logger = require('./middleware/logger');
 require('dotenv').config()
 const config = require(`./config/env/${process.env.NODE_ENV}.json`)
 
-connectDB();
-
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(logger);
-app.use(passport.initialize());
 
 // Swagger documentation setup
 const swaggerOptions = {

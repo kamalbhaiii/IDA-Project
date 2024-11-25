@@ -16,7 +16,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(logger);
-app.use(passport.initialize());
 
 // Swagger documentation setup
 const swaggerOptions = {

@@ -1,27 +1,14 @@
 const User = require('../models/User');
-const transporter = require('../config/email');
 const { createToken, verifyToken } = require('../config/jwt');
 const config = require(`../config/env/${process.env.NODE_ENV}.json`)
-
-const sendEmail = (email, subject, text) => {
-    const mailOptions = {
-        from: config.google.googleEmail,
-        to: email,
-        subject,
-        text,
-    };
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            console.error('Error sending email:', error);
-        } else {
-            console.log('Email sent:', info.response);
-        }
-    });
-};
+const ejs = require("ejs")
+const axios = require("axios");
+const path = require('path')
 
 // Controller to handle login redirection and email notifications
 const handleLogin = async (req, res) => {
     try {
+        console.log(req.user)
         const user = await User.findOne({ googleId: req.user.googleId });
 
         const token = await createToken(req.user)
@@ -33,17 +20,54 @@ const handleLogin = async (req, res) => {
                 email: req.user.email,
                 bearerToken: token
             })
-            sendEmail(req.user.email, 'Welcome!', 'Thanks for joining! Please complete the survey.');
+
+            const templatePath = path.join('__dirname', '..', 'templates', 'newUser.ejs')
+
+            const htmlContent = await ejs.renderFile(templatePath, { name: req.user.displayName })
+            try {
+                axios.post(`${config.app.notificationApiUrl}/send`, {
+                    email: req.user.email,
+                    htmlContent: htmlContent,
+                    subject: `Welcome onboard! ${req.user.displayName}`
+                })
+            }
+            catch (err) {
+                console.log(err)
+            }
             return res.redirect(`${config.app.appUrl}/survey?token=${token}`)
         } else {
             if (!user.bearerToken) {
                 await User.findOneAndUpdate({ googleId: req.user.googleId }, { bearerToken: token })
                 if (!user.surveyCompleted) {
-                    sendEmail(req.user.email, 'Welcome back!', 'You have successfully logged in. Please complete the survey.');
+                    const templatePath = path.join('__dirname', '..', 'templates', 'newUser.ejs')
+
+                    const htmlContent = await ejs.renderFile(templatePath, { name: req.user.displayName })
+                    try {
+                        axios.post(`${config.app.notificationApiUrl}/send`, {
+                            email: req.user.email,
+                            subject: `Welcome back ${req.user.displayName}`,
+                            htmlContent: htmlContent
+                        })
+                    }
+                    catch (err) {
+                        console.log(err)
+                    }
                     return res.redirect(`${config.app.appUrl}/survey?token=${token}`)
                 }
                 else {
-                    sendEmail(req.user.email, 'Welcome back!', 'You have successfully logged in.');
+                    const templatePath = path.join('__dirname', '..', 'templates', 'userSurveyCompleted.ejs')
+
+                    const htmlContent = await ejs.renderFile(templatePath, { name: req.user.displayName })
+                    try {
+                        axios.post(`${config.app.notificationApiUrl}/send`, {
+                            email: req.user.email,
+                            subject: `Welcome back ${req.user.displayName}`,
+                            htmlContent: htmlContent
+                        })
+                    }
+                    catch (err) {
+                        console.log(err)
+                    }
                     return res.redirect(`${config.app.appUrl}/dashboard?token=${token}`)
                 }
             }
@@ -64,8 +88,20 @@ const handleLogout = async (req, res) => {
         const user = await User.findById(data._id)
         if (user.bearerToken == token) {
             await User.findByIdAndUpdate(user._id, { bearerToken: "" })
-            sendEmail(data.email, 'Thank You!', 'You have successfully logged out.');
-            return res.redirect('/logout');
+            const templatePath = path.join('__dirname', '..', 'templates', 'userLoggedOut.ejs')
+
+            const htmlContent = await ejs.renderFile(templatePath, { name: user.displayName })
+            try {
+                axios.post(`${config.app.notificationApiUrl}/send`, {
+                    email: user.email,
+                    subject: `Log out success`,
+                    htmlContent: htmlContent
+                })
+            }
+            catch (err) {
+                console.log(err)
+            }
+            return res.redirect(`${config.app.appUrl}/logout`);
         }
         else {
             return res.status(401).json({ error: "Unauthorized." })

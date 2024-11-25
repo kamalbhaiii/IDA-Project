@@ -3,9 +3,9 @@
         "apiPort": 5001,
         "apiUrl": "http://localhost:5001",
         "appUrl": "http://localhost:3000",
-        "userApiUrl": "http://localhost:5000",
-        "surveyApiUrl": "http://localhost:5001",
-        "notificationApiUrl": "http://localhost:5002"
+        "userApiUrl": "http://localhost:5000/api/users",
+        "surveyApiUrl": "http://localhost:5001/api/survey",
+        "notificationApiUrl": "http://localhost:5002/api/notification"
     },
     "db": {
         "dbUrl": "mongodb+srv://sharmakamal5202:Kamal%405201@development.q1adp.mongodb.net/?retryWrites=true&w=majority&appName=Development"

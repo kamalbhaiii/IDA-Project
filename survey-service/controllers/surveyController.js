@@ -1,6 +1,10 @@
 const axios = require('axios');
 const Survey = require('../models/Survey');
 const User = require('../models/User');
+const { verifyToken } = require('../config/jwt');
+const config = require('../config/env/development.json')
+const path = require('path')
+const ejs = require('ejs')
 
 const submitSurvey = async (req, res) => {
     const {
@@ -22,41 +26,58 @@ const submitSurvey = async (req, res) => {
     } = req.body;
 
     try {
-        const userId = req.user.id; // Assuming `req.user.id` contains the authenticated user's ID
+        const token = req.headers?.authorization.split(" ")[1];
+        const { data } = await verifyToken(token)
 
-        // Check if the user has already completed the survey
-        const existingSurvey = await Survey.findOne({ userId });
-        if (existingSurvey) {
-            return res.status(400).json({ message: 'You have already completed the survey.' });
+        const existingUser = await User.findById(data._id)
+        const existingSurvey = await Survey.findOne({ userId: data._id });
+
+        if (existingUser && existingSurvey) {
+            return res.status(403).json({ message: 'You have already completed the survey.' });
         }
 
-        // Create a new survey document
-        const survey = new Survey({
-            userId,
-            isInternationalStudent,
-            gender,
-            ageGroup,
-            fieldOfStudy,
-            educationLevel,
-            germanProficiency,
-            currentlyEmployed,
-            jobSearchDuration,
-            jobSearchMethods,
-            hasInternshipExperience,
-            jobSearchChallenges,
-            networkingFrequency,
-            networkingImportance,
-            industryInterest,
-            adviceForFutureStudents,
-        });
+        if (existingUser) {
+            const survey = new Survey({
+                userId: data._id,
+                isInternationalStudent,
+                gender,
+                ageGroup,
+                fieldOfStudy,
+                educationLevel,
+                germanProficiency,
+                currentlyEmployed,
+                jobSearchDuration,
+                jobSearchMethods,
+                hasInternshipExperience,
+                jobSearchChallenges,
+                networkingFrequency,
+                networkingImportance,
+                industryInterest,
+                adviceForFutureStudents,
+            });
 
-        // Save the survey to the database
-        await survey.save();
+            await survey.save();
 
-        // Update the user document to mark the survey as completed
-        await User.findByIdAndUpdate(userId, { surveyCompleted: true });
+            await User.findByIdAndUpdate(data._id, { surveyCompleted: true });
 
-        return res.status(201).json({ message: 'Survey submitted successfully.' });
+            const templatePath = path.join('__dirname', '..', 'templates', 'surveyCompleted.ejs')
+
+            const htmlContent = await ejs.renderFile(templatePath, { name: existingUser.displayName })
+            try {
+                await axios.post(`${config.app.notificationApiUrl}/send`, {
+                    email: existingUser.email,
+                    subject: "Survey successfully completed.",
+                    htmlContent: htmlContent
+                })
+            }
+            catch (err) {
+                console.log(err)
+            }
+            return res.status(201).json({ message: 'Survey submitted successfully.' });
+        }
+        else {
+            return res.status(401).json({ message: "User doesn't exist." });
+        }
     } catch (error) {
         console.error('Error submitting survey:', error);
         res.status(500).json({ error: 'Server error during survey submission.' });
@@ -65,8 +86,10 @@ const submitSurvey = async (req, res) => {
 
 // Fetch survey data for a specific user
 const getUserSurvey = async (req, res) => {
+    const token = req.headers?.authorization.split(" ")[1]
+    const { data } = await verifyToken(token)
     try {
-        const survey = await Survey.findOne({ userId: req.user.id });
+        const survey = await Survey.findOne({ userId: data._id });
         if (!survey) {
             return res.status(404).json({ message: 'Survey not found.' });
         }
